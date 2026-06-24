@@ -1,0 +1,383 @@
+/* views/promotion-river/promotion-river.css · 升格河流（横向 4 阶段泳道 + SVG 连线）
+ * 作用域 .view-promotion-river；视觉沿用 cyber-pink（紫琥珀氛围 / 樱粉焦点）。
+ */
+
+/* ===== 骨架 ===== */
+.view-promotion-river .river-shell {
+  position: absolute;
+  inset: var(--topbar-h) 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  overflow: hidden;
+}
+
+/* ===== 顶部 ===== */
+.view-promotion-river .river-header {
+  position: relative;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.view-promotion-river .river-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  background: linear-gradient(180deg, #fff 0%, rgba(245, 237, 244, 0.7) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.view-promotion-river .river-sub {
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+.view-promotion-river .river-sub b {
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  text-shadow: 0 0 6px var(--accent-primary-a30);
+}
+.view-promotion-river .river-sub-cross { color: var(--accent-primary); }
+.view-promotion-river .river-sub-same { color: var(--text-secondary); }
+.view-promotion-river .river-header-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+}
+.view-promotion-river .river-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+}
+.view-promotion-river .river-legend-line {
+  width: 26px;
+  height: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+  flex-shrink: 0;
+}
+.view-promotion-river .river-legend-cross {
+  border-color: var(--accent-primary);
+  border-top-style: dashed;
+}
+.view-promotion-river .river-legend-same {
+  border-color: var(--promo-line);
+  border-top-width: 1.5px;
+}
+
+/* ===== 滚动区 + 河流主区 ===== */
+.view-promotion-river .river-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: var(--space-2);
+}
+/* 4 列等宽泳道；列间隙 48px 留给升格连线展开（gap > token 是为连线空间） */
+.view-promotion-river .river {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(210px, 1fr));
+  gap: 0 48px;
+  min-width: 960px;
+  padding: var(--space-3) 0 var(--space-5);
+}
+
+/* SVG 连线层（绝对覆盖河流；不拦截指针，hover 走卡片） */
+.view-promotion-river .river-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+
+/* 列间流向箭头（成长方向 note→concept→decision→dossier） */
+.view-promotion-river .river-flow-arrow {
+  position: absolute;
+  top: 30px;                 /* 对齐 .river-lane-head 中心 */
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xl);
+  color: var(--accent-secondary);
+  opacity: 0.5;
+  text-shadow: 0 0 8px var(--accent-primary-a30);
+  pointer-events: none;
+  z-index: 2;
+}
+.view-promotion-river .river-flow-arrow[data-flow="0"] { left: 25%; }
+.view-promotion-river .river-flow-arrow[data-flow="1"] { left: 50%; }
+.view-promotion-river .river-flow-arrow[data-flow="2"] { left: 75%; }
+
+/* ===== 阶段列 ===== */
+.view-promotion-river .river-lane {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.view-promotion-river .river-lane-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+  padding-left: var(--space-3);
+  position: relative;
+}
+.view-promotion-river .river-lane-head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--kind-color);
+  box-shadow: 0 0 8px var(--kind-color);
+}
+.view-promotion-river .river-lane-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--kind-color);
+  box-shadow: 0 0 10px var(--kind-color);
+  flex-shrink: 0;
+}
+.view-promotion-river .river-lane-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.view-promotion-river .river-lane-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+.view-promotion-river .river-lane-hint {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+.view-promotion-river .river-lane-count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  color: var(--kind-color);
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.12);
+  border: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+
+/* 列内卡片列表 */
+.view-promotion-river .river-lane-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ===== 节点卡片 ===== */
+.view-promotion-river .river-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2) calc(var(--space-3) + 3px);
+  text-align: left;
+  background: var(--surface-2);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-inset);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--dur-base) var(--ease-spring),
+              border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+/* 左侧 kind 色条 */
+.view-promotion-river .river-card-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--kind-color);
+  box-shadow: 0 0 8px var(--kind-color);
+}
+.view-promotion-river .river-card-title {
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+.view-promotion-river .river-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.view-promotion-river .river-card-auth {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+.view-promotion-river .river-card-derivs {
+  display: inline-flex;
+  gap: 5px;
+}
+.view-promotion-river .river-deriv {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-xs);
+  color: var(--accent-secondary);
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-soft);
+  background: rgba(181, 158, 230, 0.06);
+}
+.view-promotion-river .river-deriv.is-target {
+  color: var(--accent-tertiary);
+  background: rgba(230, 184, 133, 0.06);
+}
+.view-promotion-river .river-card:hover {
+  border-color: var(--accent-primary-a24);
+  transform: translateX(2px);
+  box-shadow:
+    0 0 0 1px var(--accent-primary-a12),
+    0 8px 22px rgba(4, 2, 7, 0.3),
+    0 0 18px var(--accent-primary-a08);
+}
+.view-promotion-river .river-card:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+/* ===== 空阶段（decision=0）===== */
+.view-promotion-river .river-lane.is-empty .river-lane-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-3);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  background: rgba(137, 121, 137, 0.04);
+}
+.view-promotion-river .river-lane-empty svg {
+  width: 40px;
+  height: 40px;
+  fill: none;
+  stroke: var(--kind-color);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.6;
+}
+.view-promotion-river .river-empty-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.view-promotion-river .river-empty-hint {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+.view-promotion-river .river-empty-hint b {
+  color: var(--kind-color);
+  font-weight: 500;
+}
+
+/* ===== 展开/收起 ===== */
+.view-promotion-river .river-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-1);
+  padding: var(--space-2);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out);
+}
+.view-promotion-river .river-more:hover {
+  background: var(--accent-primary-a06);
+  border-color: var(--accent-primary-a30);
+  color: var(--accent-primary);
+}
+.view-promotion-river .river-more-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+/* ===== SVG 连线 ===== */
+.view-promotion-river .river-link-cross {
+  fill: none;
+  stroke: var(--accent-primary);
+  stroke-width: 1.8;
+  opacity: 0.55;
+  stroke-dasharray: 6 4;
+  animation: river-flow 1.4s linear infinite;
+  transition: opacity var(--dur-base) var(--ease-out),
+              stroke-width var(--dur-base) var(--ease-out);
+}
+.view-promotion-river .river-link-same {
+  fill: none;
+  stroke: var(--promo-line);
+  stroke-width: 1;
+  opacity: 0.18;
+  transition: opacity var(--dur-base) var(--ease-out),
+              stroke-width var(--dur-base) var(--ease-out);
+}
+.view-promotion-river .river-link-cross.is-hl,
+.view-promotion-river .river-link-same.is-hl {
+  opacity: 0.92;
+  stroke-width: 2.4;
+}
+@keyframes river-flow {
+  to { stroke-dashoffset: -10; }
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 640px) {
+  .view-promotion-river .river-header { flex-direction: column; align-items: flex-start; }
+}

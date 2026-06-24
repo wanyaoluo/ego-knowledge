@@ -1,0 +1,203 @@
+/* EgoKnowledge · cyber-pink 视觉 token（spec 真源）
+ * 氛围：紫/琥珀沉静档案感，樱粉仅标记当前焦点。
+ */
+:root {
+  /* 画布与底色（v2.1：深紫琥珀主调，黑曜石降为质感辅助） */
+  --bg-canvas: #120818;
+  --bg-stage: #1c0f24;
+
+  /* 焦点三色（spec 表格真源） */
+  --accent-primary: #e89bbb;   /* 樱粉 · 仅焦点/选中 */
+  --accent-secondary: #b59ee6; /* 紫 · concept 主调 */
+  --accent-tertiary: #e6b885;  /* 琥珀 · dossier 主调 */
+
+  /* 辅助色 */
+  --accent-quaternary: #8ea786; /* 沉绿 · 决策/正面 */
+  --accent-positive: #96c48e;
+  --accent-warning: #dbad72;
+  --accent-danger: #e08585;
+
+  /* 节点 kind 色（spec：concept 紫 / dossier 琥珀 / note 浅紫 / source 灰紫） */
+  --kind-concept: #b59ee6;
+  --kind-dossier: #e6b885;
+  --kind-note: #c9b8e8;
+  --kind-source: #6b5d7a;
+  --kind-decision: #8ea786;
+  --kind-view: #897989;
+
+  /* 表面层（玻璃面板底） */
+  --surface-1: rgba(18, 13, 17, 0.62);
+  --surface-2: rgba(22, 16, 20, 0.60);
+  --surface-hover: rgba(232, 155, 187, 0.06);
+  --surface-active: rgba(232, 155, 187, 0.16);
+
+  /* 文本三档 */
+  --text-primary: #f5edf4;
+  --text-secondary: #c1b3c0;
+  --text-tertiary: #897989;
+
+  /* 描边 */
+  --border-soft: rgba(205, 181, 196, 0.12);
+  --border-medium: rgba(194, 152, 177, 0.24);
+  --border-focus: var(--accent-primary);
+
+  /* 玻璃（spec：blur(24px) saturate(180%)） */
+  --glass-blur: 24px;
+  --glass-saturate: 180%;
+  --glass-bg: var(--surface-1);
+
+  /* 阴影 */
+  --shadow-panel: 0 16px 38px rgba(4, 2, 7, 0.34);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --shadow-focus: 0 0 0 3px rgba(232, 155, 187, 0.28);
+
+  /* 字体 */
+  --font-ui: "Cockpit UI", "汉仪中圆", "Noto Sans CJK SC", -apple-system, sans-serif;
+  --font-display: "Cockpit Display", "汉仪中黑", "Noto Sans CJK SC", -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;   /* W5：单一真源（含 Fira Code） */
+
+  /* 字号刻度 */
+  --fs-xs: 10px;
+  --fs-sm: 11px;
+  --fs-md: 12px;
+  --fs-base: 13px;
+  --fs-lg: 14px;
+  --fs-xl: 18px;
+  --fs-2xl: 22px;
+
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  /* 间距（4px 基线） */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* 动效 */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* spring：少女感弹性曲线（hover/过渡用，过度防御 → 仅装饰元素） */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 160ms;
+  --dur-slow: 320ms;
+  --dur-xslow: 600ms;
+
+  /* 层级 */
+  --z-canvas: 1;
+  --z-starfield: 0;       /* 星空粒子层（在 cytoscape canvas 之下） */
+  --z-scanline: 25;       /* 扫描线 overlay（在面板之上，顶栏之下） */
+  --z-panel: 15;
+  --z-topbar: 20;
+  --z-loading: 30;
+
+  /* 顶栏尺寸 */
+  --topbar-h: 56px;
+
+  /* ====== v2 视觉加料层（cyber-pink 主调保留，叠加发光/粒子/装饰） ====== */
+
+  /* 节点 glow（黑曜石光晕：underlay 半透明同色 + padding） */
+  --glow-opacity-base: 0.55;
+  --glow-opacity-hover: 0.85;
+  --glow-opacity-focus: 1;
+  --glow-padding-base: 7px;
+  --glow-padding-hover: 12px;
+  --glow-padding-focus: 16px;
+
+  /* 全局背景层（深空 + 樱粉光晕 + 网格） */
+  --bg-deep: #0d0813;                 /* 比画布更深一档，紫调，用于 fixed 背景层 */
+  --aura-pink: rgba(232, 155, 187, 0.18);
+  --aura-violet: rgba(181, 158, 230, 0.16);
+  --aura-amber: rgba(230, 184, 133, 0.10);
+  --grid-dot: rgba(232, 155, 187, 0.06);
+
+  /* 扫描线 overlay（CRT 极客感，v2.1：从 0.035 提到 0.08 + 间距 4px，subtle 但可辨） */
+  --scanline-color: rgba(232, 155, 187, 0.08);
+  --scanline-size: 4px;
+
+  /* HUD 角标（少女+极客克制装饰；适度显眼，避免太 subtle 看不见） */
+  --hud-color: rgba(232, 155, 187, 0.78);
+  --hud-size: 16px;
+  --hud-thickness: 2px;
+
+  /* v2.1 · 面板边框 glow（紫描边 + 粉扩散，极客+少女同时提升） */
+  --panel-edge-glow: 0 0 0 1px rgba(181, 158, 230, 0.10), 0 0 28px rgba(232, 155, 187, 0.05);
+
+  /* v2.1 · 樱粉命名透明度档位（W7：替代散落 rgba(232,155,187,X) 字面量）
+   * 按 base/graph/detail 三视图实际出现的透明度归档，全局复用。 */
+  --accent-primary-a03: rgba(232, 155, 187, 0.03);
+  --accent-primary-a04: rgba(232, 155, 187, 0.04);
+  --accent-primary-a06: rgba(232, 155, 187, 0.06);
+  --accent-primary-a08: rgba(232, 155, 187, 0.08);
+  --accent-primary-a10: rgba(232, 155, 187, 0.10);
+  --accent-primary-a12: rgba(232, 155, 187, 0.12);
+  --accent-primary-a15: rgba(232, 155, 187, 0.15);
+  --accent-primary-a18: rgba(232, 155, 187, 0.18);
+  --accent-primary-a20: rgba(232, 155, 187, 0.20);
+  --accent-primary-a24: rgba(232, 155, 187, 0.24);
+  --accent-primary-a25: rgba(232, 155, 187, 0.25);
+  --accent-primary-a30: rgba(232, 155, 187, 0.30);
+  --accent-primary-a35: rgba(232, 155, 187, 0.35);
+  --accent-primary-a40: rgba(232, 155, 187, 0.40);
+  --accent-primary-a45: rgba(232, 155, 187, 0.45);
+  --accent-primary-a50: rgba(232, 155, 187, 0.50);
+  --accent-primary-a55: rgba(232, 155, 187, 0.55);
+  --accent-primary-a60: rgba(232, 155, 187, 0.60);
+  --accent-primary-a75: rgba(232, 155, 187, 0.75);
+
+  /* ====== v2.2 信息设计二次加工 · 节点性格 / 生命力 / 体检报告 ====== */
+
+  /* confidence 边框质感（图谱节点脾性维度之一）
+   * high = 实线樱粉 · 已验证可信；medium = 虚线紫 · 半信半疑；null = 无边框 · 未经评估 */
+  --conf-border-high: var(--accent-primary);     /* 实线 · 樱粉 */
+  --conf-border-medium: var(--accent-secondary); /* 虚线 · 紫 */
+
+  /* 知识星等 glow padding（authority 叙事化：高 authority = 大弥散光环）
+   * 1星紧凑 → 5星大弥散，呼应"星等"概念，让一眼看出知识分量 */
+  --star-glow-1: 5px;   /* 微光 */
+  --star-glow-2: 7px;   /* 常规 */
+  --star-glow-3: 9px;   /* 中亮 */
+  --star-glow-4: 12px;  /* 明亮 */
+  --star-glow-5: 16px;  /* 耀眼（知识中枢） */
+
+  /* freshness 脉冲参数（volatile 躁动 / watch 中频 / stable 沉静）
+   * 用于 rAF 批量更新 underlay-opacity 的振幅与频率 */
+  --pulse-volatile-amp: 0.45;   /* 振幅大 = 强呼吸 */
+  --pulse-volatile-base: 0.40;  /* 基线低 → 起伏明显 */
+  --pulse-volatile-freq: 3.0;   /* 高频 = 躁 */
+  --pulse-watch-amp: 0.25;
+  --pulse-watch-base: 0.50;
+  --pulse-watch-freq: 1.1;
+  --pulse-stable-opacity: 0.55; /* 静止 · 不更新 */
+
+  /* 生命力雷达图（detail · 4 维综合） */
+  --vitality-fill: rgba(232, 155, 187, 0.18);     /* 樱粉半透 */
+  --vitality-stroke: var(--accent-primary);
+  --vitality-grid: rgba(194, 152, 177, 0.14);
+  --vitality-axis: rgba(137, 121, 137, 0.32);
+  --vitality-vertex: var(--accent-primary);
+  --vitality-vertex-glow: rgba(232, 155, 187, 0.55);
+
+  /* 升格轨迹（detail · note→concept→decision→dossier） */
+  --promo-reached: var(--accent-secondary);  /* 已达到阶段 · 紫 */
+  --promo-current: var(--accent-primary);    /* 当前阶段 · 樱粉 */
+  --promo-future: rgba(137, 121, 137, 0.30); /* 未到阶段 · 灰 */
+  --promo-line: rgba(194, 152, 177, 0.24);
+
+  /* 体检报告 grade 色（dashboard 叙事化）
+   * A 沉绿（健康）/ B 紫（良好）/ C 琥珀（关注）/ D 红（警示） */
+  --grade-a: var(--accent-positive);
+  --grade-b: var(--accent-secondary);
+  --grade-c: var(--accent-tertiary);
+  --grade-d: var(--accent-danger);
+  --grade-a-glow: rgba(150, 196, 142, 0.45);
+  --grade-b-glow: rgba(181, 158, 230, 0.45);
+  --grade-c-glow: rgba(219, 173, 114, 0.45);
+  --grade-d-glow: rgba(224, 133, 133, 0.45);
+}

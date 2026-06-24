@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egoknowledge.local/schemas/relation.schema.json",
+  "type": "object",
+  "required": [
+    "target",
+    "type"
+  ],
+  "properties": {
+    "target": {
+      "type": "string",
+      "pattern": "^ek_(src|note|dos|con|dec|view)_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "type": {
+      "enum": [
+        "derived_from",
+        "related",
+        "supersedes",
+        "applied_in",
+        "evidence_for",
+        "part_of",
+        "contradicts",
+        "depends_on"
+      ]
+    },
+    "source": {
+      "enum": [
+        "confirmed",
+        "ai_suggested",
+        "ai_confirmed"
+      ]
+    }
+  }
+}

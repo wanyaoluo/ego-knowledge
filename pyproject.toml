@@ -1,0 +1,64 @@
+[project]
+name = "ego-knowledge"
+version = "0.2.0"
+description = "EgoKnowledge personal knowledge base core library and CLI"
+requires-python = ">=3.12"
+dependencies = [
+    "jieba>=0.42.1",
+    "pyyaml>=6.0",
+    "ulid-py>=1.1.0",
+    "click>=8.1.0",
+    "jsonschema>=4.21.0",
+    "python-Levenshtein>=0.25",  # 术语冲突检查，被 ingest 直接使用
+    "mcp>=1.12",
+    "packaging>=21.0",  # registry.py init_schema 版本比较
+    "numpy>=1.26,<2.0",  # Phase 7 dense 余弦相似度向量化计算
+    "mdformat>=0.7",  # Markdown 格式化（写入通道自动修复，运行时）
+    "mdformat-gfm>=0.3",  # GFM 扩展（表格/任务列表/删除线）
+]
+
+[project.scripts]
+ek = "ego_knowledge.cli:main"
+ek-mcp = "ego_knowledge.mcp_server:main"
+ek-archive = "ego_knowledge.scripts.archive_dirty_concepts:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-xdist>=3.5",  # 并行测试（Phase 6 验收用）
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "python-Levenshtein>=0.25",  # 术语冲突检查（Phase 3 ingest）
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ego_knowledge"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+addopts = "-m 'not slow'"
+markers = [
+    "slow: stress or benchmark tests that are not part of the default fast suite",
+]
+
+[tool.mdformat]
+# 写入通道 body 格式化：启用 GFM 扩展（表格/任务列表/删除线）
+extensions = ["gfm"]
+# 不设 wrap（保持 Semantic Line Breaks，不改换行）

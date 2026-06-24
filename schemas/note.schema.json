@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egoknowledge.local/schemas/note.schema.json",
+  "type": "object",
+  "required": [
+    "source_refs",
+    "extracted_at",
+    "promotion_targets"
+  ],
+  "properties": {
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "extracted_at": {
+      "type": "string"
+    },
+    "promotion_targets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,242 @@
+/* views/structure-map/structure-map.css · 结构地图（领域层级树）
+ * 作用域 .view-structure-map；视觉沿用 cyber-pink（紫琥珀氛围 / 樱粉焦点）。
+ */
+
+/* ===== 骨架 ===== */
+.view-structure-map .sm-shell {
+  position: absolute;
+  inset: var(--topbar-h) 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  overflow: hidden;
+}
+
+/* ===== 顶部 ===== */
+.view-structure-map .sm-header {
+  position: relative;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.view-structure-map .sm-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  background: linear-gradient(180deg, #fff 0%, rgba(245, 237, 244, 0.7) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.view-structure-map .sm-sub {
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+.view-structure-map .sm-sub b {
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  text-shadow: 0 0 6px var(--accent-primary-a30);
+}
+.view-structure-map .sm-header-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+.view-structure-map .sm-header-actions .btn { flex: 0 0 auto; }
+
+/* ===== 树容器 ===== */
+.view-structure-map .sm-tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-right: var(--space-2);
+}
+
+/* ===== 分组 ===== */
+.view-structure-map .sm-group {
+  position: relative;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  overflow: hidden;
+  transition: border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+.view-structure-map .sm-group.open {
+  border-color: var(--accent-primary-a24);
+  box-shadow: 0 0 0 1px var(--accent-primary-a10),
+              0 0 20px rgba(232, 155, 187, 0.05);
+}
+/* 未归类分组弱化（虚线 + 灰，标记它"结构未定"） */
+.view-structure-map .sm-group.is-unsorted {
+  border-style: dashed;
+  border-color: var(--border-medium);
+}
+
+/* 分组头部：[caret] [name] [band] [count] */
+.view-structure-map .sm-group-head {
+  display: grid;
+  grid-template-columns: 20px 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--fs-lg);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out);
+}
+.view-structure-map .sm-group-head:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.view-structure-map .sm-group.open .sm-group-head {
+  color: var(--accent-primary);
+  background: var(--accent-primary-a04);
+}
+.view-structure-map .sm-caret {
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  transition: transform var(--dur-base) var(--ease-soft),
+              color var(--dur-base) var(--ease-out);
+  line-height: 1;
+}
+.view-structure-map .sm-group.open .sm-caret {
+  transform: rotate(90deg);
+  color: var(--accent-primary);
+}
+.view-structure-map .sm-group-name {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  font-family: var(--font-display);
+  word-break: break-word;
+}
+
+/* 分组头部 kind 光谱条（迷你版，一眼看出该域构成） */
+.view-structure-map .sm-band {
+  display: flex;
+  width: 120px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: rgba(137, 121, 137, 0.12);
+  flex-shrink: 0;
+}
+.view-structure-map .sm-band-seg {
+  display: block;
+  height: 100%;
+  box-shadow: 0 0 6px currentColor;
+}
+.view-structure-map .sm-group-count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.12);
+  flex-shrink: 0;
+}
+.view-structure-map .sm-group.open .sm-group-count {
+  color: var(--accent-primary);
+  background: var(--accent-primary-a10);
+}
+
+/* ===== 展开折叠动画（grid-template-rows 0fr→1fr，现代浏览器优雅）
+ *   reduced-motion 下 base.css 已全局降级 transition-duration，瞬间展开。
+ *   grid 子项必须 min-height:0 才能正确收缩。 */
+.view-structure-map .sm-group-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-slow) var(--ease-soft);
+}
+.view-structure-map .sm-group.open .sm-group-body {
+  grid-template-rows: 1fr;
+}
+.view-structure-map .sm-nodes {
+  overflow: hidden;
+  min-height: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ===== 节点项 ===== */
+.view-structure-map .sm-node {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: rgba(137, 121, 137, 0.04);
+  color: var(--text-secondary);
+  font-size: var(--fs-base);
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+}
+.view-structure-map .sm-node:hover,
+.view-structure-map .sm-node:focus-visible {
+  background: var(--accent-primary-a08);
+  border-color: var(--border-soft);
+  color: var(--text-primary);
+  transform: translateX(2px);
+  outline: none;
+}
+.view-structure-map .sm-node-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+.view-structure-map .sm-node-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.view-structure-map .sm-node-kind {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+/* ===== 响应式：窄屏 ===== */
+@media (max-width: 720px) {
+  .view-structure-map .sm-band { display: none; }
+  .view-structure-map .sm-group-head {
+    grid-template-columns: 20px 1fr auto;
+  }
+}

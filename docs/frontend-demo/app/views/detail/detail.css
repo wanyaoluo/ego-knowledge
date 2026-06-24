@@ -1,0 +1,853 @@
+/* views/detail/detail.css · 单条深读弹窗（Phase 2 ek-detail · v2.8 起 modal overlay）
+ * 作用域 .detail-modal（容器）+ .view-detail（mount 时加到容器）；
+ * 视觉沿用 cyber-pink（spec 真源：紫琥珀氛围 / 樱粉焦点）。
+ */
+
+/* ===== 弹窗容器：fixed 全屏，居中弹窗，z-index 高于顶栏/扫描线 ===== */
+.detail-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-loading);   /* 30：盖过 topbar(20) + scanline(25)，弹窗成为唯一焦点 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  animation: detail-modal-in var(--dur-base) var(--ease-out);
+}
+.detail-modal[hidden] { display: none; }
+@keyframes detail-modal-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 遮罩层：半透深底 + 轻 blur，主视图隐约可辨但不抢戏。点遮罩 = 关闭弹窗。 */
+.detail-modal .detail-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 4, 12, 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* ===== 弹窗主体（原 detail-shell，从占满顶栏下方改为居中大弹窗）=====
+ * v2.8：容器从 #view-root（全页）改为 #detail-modal（弹窗）。
+ * "几乎满配" = 占视口大部分但留呼吸边距，居中显示，自带玻璃底 + 紫描边 glow。
+ * 内部布局不变：header + 双栏（aside + main）全保留。 */
+.view-detail .detail-shell {
+  position: relative;          /* 作为 × 关闭按钮的定位上下文 */
+  width: min(1280px, 100%);    /* 大屏不过宽，小屏占满 */
+  max-height: 100%;            /* 受容器 padding 约束 */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  overflow: hidden;
+  /* 弹窗自带头玻璃质感（脱离 .panel 依赖，独立成视觉容器） */
+  background: var(--surface-1);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 24px 60px rgba(4, 2, 7, 0.6),
+    var(--panel-edge-glow),
+    inset 0 0 24px var(--accent-primary-a03);
+  animation: detail-shell-in var(--dur-slow) var(--ease-soft);
+}
+@supports not ((backdrop-filter: blur(24px)) or (-webkit-backdrop-filter: blur(24px))) {
+  .view-detail .detail-shell { background: rgba(18, 8, 24, 0.96); }
+}
+@keyframes detail-shell-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ===== 右上角 × 关闭按钮（浮于弹窗右上角，圆形樱粉描边）===== */
+.detail-modal .detail-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(18, 8, 24, 0.72);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  /* × 需盖在 .detail-header(.panel, z-index:var(--z-panel)=15) 之上才可点。
+   * 原写死 z-index:2 < 15 被 header 拦截 pointer events（× 点击失效）。
+   * 用 calc(var(--z-panel) + 1) 语义"刚好在 panel 之上"，跟随 token 自动调整。 */
+  z-index: calc(var(--z-panel) + 1);
+  transition: color var(--dur-base) var(--ease-out),
+              background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+}
+.detail-modal .detail-close svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.detail-modal .detail-close:hover {
+  color: var(--accent-primary);
+  background: var(--accent-primary-a15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 16px var(--accent-primary-a30);
+}
+.detail-modal .detail-close:hover svg { transform: rotate(90deg); }
+.detail-modal .detail-close:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ===== 顶部信息条 ===== */
+.view-detail .detail-header {
+  position: relative;
+  padding: var(--space-4) var(--space-5);
+  flex-shrink: 0;
+}
+/* ===== 顶部工具条（返回 + 复制路径同横排 · 用户诉求："同一个横排"）=====
+ * 原布局：返回独占一行（dh-back）+ kind/复制路径 space-between（dh-row）→ 返回与复制
+ *   分散两处，用户找不到。改为单条 toolbar：左=导航行动组（返回+复制路径），右=元信息（kind）。
+ * 视觉分区：左侧行动组紧凑聚集（一眼看到"能做什么"），右侧 kind 标签作为元信息锚点。 */
+.view-detail .dh-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;   /* 窄屏时行动组与 kind 换行，不挤压 */
+}
+.view-detail .dh-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.view-detail .dh-kind {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid currentColor;
+  font-weight: 500;
+  font-family: var(--font-mono);   /* v2 终端字 */
+  position: relative;
+}
+.view-detail .dh-kind::before {
+  content: '◆';
+  margin-right: 6px;
+  opacity: 0.7;
+}
+.view-detail .dh-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  line-height: 1.3;
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+  word-break: break-word;
+  /* v2 标题渐变（Linear-Look） */
+  background: linear-gradient(180deg, #fff 0%, rgba(245, 237, 244, 0.7) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 24px var(--accent-primary-a12);   /* glow 配合 transparent text */
+}
+.view-detail .dh-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.view-detail .dh-tags .tag-muted {
+  color: var(--text-tertiary);
+  background: rgba(137, 121, 137, 0.08);
+}
+
+/* 复制路径按钮 */
+.view-detail .btn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(181, 158, 230, 0.16), rgba(230, 184, 133, 0.12));
+  border-color: rgba(181, 158, 230, 0.3);
+  font-size: var(--fs-base);
+}
+.view-detail .btn-copy:hover { border-color: var(--accent-secondary); }
+.view-detail .btn-copy svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ===== 双栏 ===== */
+.view-detail .detail-cols {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 296px 1fr;
+  gap: var(--space-4);
+  min-height: 0;
+}
+.view-detail .detail-aside,
+.view-detail .detail-main {
+  position: relative;
+  padding: var(--space-4) var(--space-5);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* section 分隔（两栏通用，覆盖 base .panel-section 的默认 padding 以贴合双栏紧凑节奏）*/
+.view-detail .detail-aside .panel-section,
+.view-detail .detail-main .panel-section {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.view-detail .detail-aside .panel-section:first-child,
+.view-detail .detail-main .panel-section:first-child { padding-top: 0; }
+.view-detail .detail-aside .panel-section:last-child,
+.view-detail .detail-main .panel-section:last-child { border-bottom: none; padding-bottom: 0; }
+
+.view-detail .detail-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+}
+
+/* ===== 关系列表（左栏）===== */
+.view-detail .rel-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.view-detail .rel-empty {
+  font-size: var(--fs-md);
+  padding: var(--space-1) 0;
+}
+.view-detail .rel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.view-detail .rel-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.view-detail .rel-group-line {
+  width: 18px;
+  height: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+  flex-shrink: 0;
+}
+.view-detail .rel-group-line.dashed { border-top-style: dashed; }
+.view-detail .rel-group-line.dotted { border-top-style: dotted; border-top-width: 2.5px; }
+.view-detail .rel-group-label {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.06em;
+  color: var(--accent-secondary);
+}
+.view-detail .rel-group-count {
+  font-size: var(--fs-sm);
+  margin-left: auto;
+}
+.view-detail .rel-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  width: 100%;
+  text-align: left;
+  background: rgba(137, 121, 137, 0.06);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--fs-md);
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out);
+}
+.view-detail .rel-item:hover {
+  background: var(--accent-primary-a08);
+  border-color: var(--border-soft);
+  color: var(--text-primary);
+}
+.view-detail .rel-item-arrow {
+  color: var(--text-tertiary);
+  font-size: var(--fs-base);
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+}
+.view-detail .rel-item-kind {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+.view-detail .rel-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 元指标（右栏）===== */
+.view-detail .metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-4);
+}
+.view-detail .metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.view-detail .metric-bar { grid-column: 1 / -1; }
+.view-detail .metric-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.view-detail .metric-label {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+.view-detail .metric-val {
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+  font-family: var(--font-mono);   /* v2 终端字体（极客感） */
+  text-shadow: 0 0 6px var(--accent-primary-a20);
+}
+.view-detail .metric-val.muted { text-shadow: none; }
+.view-detail .metric-id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+}
+.view-detail .metric-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.2);
+  overflow: hidden;
+}
+.view-detail .metric-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+/* ===== 正文（v2 markdown 真实化）===== */
+.view-detail .prose {
+  font-size: var(--fs-base);
+  line-height: 1.75;
+  color: var(--text-secondary);
+  /* 给 prose 一个 cyber-pink 顶部装饰线（hud 感） */
+  position: relative;
+  padding-top: var(--space-3);
+}
+.view-detail .prose::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-primary), transparent);
+  border-radius: var(--radius-pill);
+}
+.view-detail .prose p { margin-bottom: var(--space-3); }
+.view-detail .prose p:last-child { margin-bottom: 0; }
+.view-detail .prose h1,
+.view-detail .prose h2,
+.view-detail .prose h3,
+.view-detail .prose h4 {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-3);
+  letter-spacing: 0.01em;
+}
+.view-detail .prose h1:first-child,
+.view-detail .prose h2:first-child,
+.view-detail .prose h3:first-child { margin-top: 0; }
+.view-detail .prose h2 {
+  font-size: var(--fs-xl);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--accent-primary);
+  position: relative;
+}
+.view-detail .prose h2::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 70%;
+  background: var(--accent-primary);
+  filter: blur(3px);
+  opacity: 0.6;
+}
+.view-detail .prose h3 { font-size: var(--fs-lg); color: var(--accent-secondary); }
+.view-detail .prose h4 {
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.view-detail .prose strong {
+  color: var(--accent-primary);
+  font-weight: 600;
+  text-shadow: 0 0 8px var(--accent-primary-a25);
+}
+.view-detail .prose em {
+  color: var(--accent-secondary);
+  font-style: italic;
+}
+.view-detail .prose ul,
+.view-detail .prose ol {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-4);
+}
+.view-detail .prose li {
+  margin-bottom: var(--space-1);
+  line-height: 1.7;
+}
+.view-detail .prose ul li::marker {
+  color: var(--accent-primary);
+  content: '◆ ';
+  font-size: var(--fs-sm);
+}
+.view-detail .prose code {
+  font-family: var(--font-mono);
+  color: var(--accent-secondary);
+  background: rgba(181, 158, 230, 0.1);
+  border: 1px solid rgba(181, 158, 230, 0.18);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.92em;
+  word-break: break-all;
+}
+.view-detail .prose pre {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(13, 8, 19, 0.6);
+  border: 1px solid var(--border-soft);
+  border-left: 2px solid var(--accent-secondary);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  position: relative;
+}
+.view-detail .prose pre::before {
+  content: '> ';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  letter-spacing: 0.2em;
+  opacity: 0.6;
+}
+.view-detail .prose pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  word-break: normal;
+}
+.view-detail .prose blockquote {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-left: 2px solid var(--accent-primary);
+  background: var(--accent-primary-a04);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+.view-detail .prose a {
+  color: var(--accent-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--accent-primary-a40);
+  transition: text-decoration-color var(--dur-base);
+}
+.view-detail .prose a:hover { text-decoration-color: var(--accent-primary); }
+.view-detail .prose hr {
+  border: none;
+  height: 1px;
+  margin: var(--space-4) 0;
+  background: linear-gradient(90deg, transparent, var(--border-medium), transparent);
+}
+/* 保留旧 prose-lead 兼容（无 body 兜底时） */
+.view-detail .prose .prose-lead,
+.view-detail .prose-lead {
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+.view-detail .prose-hint { font-size: var(--fs-md); }
+
+/* ===== 关系子图 ===== */
+.view-detail .subgraph-wrap {
+  position: relative;
+  height: 280px;
+  border-radius: var(--radius-md);
+  background: rgba(18, 8, 24, 0.4);
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+.view-detail .subgraph {
+  position: absolute;
+  inset: 0;
+}
+.view-detail .subgraph[hidden] { display: none; }
+.view-detail .subgraph-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-base);
+}
+
+/* ===== v2.2 知识生命力雷达图 + 图例 ===== */
+.view-detail .vitality-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+.view-detail .vitality-radar {
+  width: 168px;
+  height: 168px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 12px var(--accent-primary-a12));
+}
+.view-detail .vitality-axis-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--text-secondary);
+  letter-spacing: 0.08em;
+}
+.view-detail .vitality-legend {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.view-detail .vit-row {
+  display: grid;
+  grid-template-columns: 40px auto 1fr 28px;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-md);
+}
+.view-detail .vit-name {
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+.view-detail .vit-raw {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+}
+.view-detail .vit-bar {
+  height: 4px;
+  background: rgba(137, 121, 137, 0.18);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.view-detail .vit-bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 6px var(--accent-primary-a40);
+}
+.view-detail .vit-score {
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  text-align: right;
+  text-shadow: 0 0 6px var(--accent-primary-a30);
+}
+.view-detail .vitality-foot {
+  font-size: var(--fs-xs);
+  margin-top: var(--space-3);
+  letter-spacing: 0.04em;
+}
+.view-detail .vit-id {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  word-break: break-all;
+}
+
+/* ===== v2.2 升格轨迹 ===== */
+.view-detail .promo-track {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.view-detail .promo-narrative {
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.view-detail .promo-narrative strong {
+  color: var(--accent-primary);
+  font-weight: 500;
+  text-shadow: 0 0 6px var(--accent-primary-a25);
+}
+.view-detail .promo-sep {
+  color: var(--text-tertiary);
+  margin: 0 var(--space-1);
+}
+.view-detail .promo-svg {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+}
+.view-detail .promo-stage-label {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.view-detail .promo-stage-label.promo-current {
+  fill: var(--promo-current);
+  font-weight: 600;
+  font-size: 11px;
+}
+.view-detail .promo-stage-label.promo-reached { fill: var(--promo-reached); }
+.view-detail .promo-stage-label.promo-future { fill: var(--text-tertiary); }
+.view-detail .promo-progress {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.04em;
+}
+.view-detail .promo-progress strong {
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* ===== "← 后退"按钮（颜色强化 · 用户诉求："返回颜色太不显眼，应该能感受到这是比较重要的按钮"）
+ * v2.8 改名：返回 → 后退（用户原话"返回改名叫后退"）。
+ * 原样式：灰字 + 灰底 + 软边框 → 视觉权重低于复制路径，用户感受不到"这是重要按钮"。
+ * 强化策略：樱粉强调（与本视图 btn-guide-primary、graph 的 btn-detail-entry 形成一致的
+ *   "导航/行动 = 樱粉"语义）。视觉层级：复制路径(中) < 后退(明显) < 引导卡片大CTA(强)。
+ *   后退按钮尺寸小，靠背景饱和度补偿视觉权重——一眼看出是"明显樱粉色块按钮"；
+ *   guide-primary 体量更大(fs-lg+大padding)，整体仍是最强 CTA，后退不喧宾夺主。
+ * 强化维度：樱粉文字 + 字重 500 + 樱粉渐变底(0.28~0.18) + 樱粉边框(0.40) + 轻 glow。
+ * 同横排等高：padding(6px) + font-size(fs-base) + flex(0 0 auto) 三项与 btn-copy 完全对齐。
+ * v2.8 disabled 暗色态：无可后退历史（history.length<=1，刚打开 demo）时去樱粉化 + 降透明，
+ *   明确传达"当前点不动"——与可点态形成强对比（用户原话"不能返回时候要暗色"）。 */
+.view-detail .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;              /* 覆盖 base .btn 的 flex:1，与 btn-copy 一致 · 按内容宽度紧挨成组 */
+  padding: 6px var(--space-3);
+  font-size: var(--fs-base);  /* 对齐 btn-copy(fs-base) · 同横排两按钮严格等高 */
+  font-weight: 500;
+  color: var(--accent-primary);
+  background: linear-gradient(135deg, rgba(232, 155, 187, 0.28), rgba(232, 155, 187, 0.18));
+  border-color: rgba(232, 155, 187, 0.40);
+  text-shadow: 0 0 8px rgba(232, 155, 187, 0.28);
+  transition: color var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              background var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out),
+              opacity var(--dur-base) var(--ease-out);
+}
+.view-detail .btn-back svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.view-detail .btn-back:hover {
+  background: linear-gradient(135deg, rgba(232, 155, 187, 0.40), rgba(232, 155, 187, 0.28));
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 12px rgba(232, 155, 187, 0.18);
+}
+.view-detail .btn-back:hover svg { transform: translateX(-2px); }
+.view-detail .btn-back:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
+}
+/* disabled 暗色态：无可后退历史时。去樱粉 / 降透明 / 灰边 / 无 glow / 禁动效。
+ * 特异性高于 base .btn:disabled(.btn:disabled)，确保暗色态在 detail 作用域内显式呈现。 */
+.view-detail .btn-back:disabled,
+.view-detail .btn-back[aria-disabled="true"] {
+  color: var(--text-tertiary);
+  background: rgba(137, 121, 137, 0.08);
+  border-color: var(--border-soft);
+  text-shadow: none;
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.view-detail .btn-back:disabled:hover,
+.view-detail .btn-back[aria-disabled="true"]:hover {
+  background: rgba(137, 121, 137, 0.08);
+  border-color: var(--border-soft);
+  box-shadow: none;
+}
+.view-detail .btn-back:disabled:hover svg,
+.view-detail .btn-back[aria-disabled="true"]:hover svg { transform: none; }
+
+/* ===== A3：无选中态 / 不存在 引导卡片 =====
+   用户语言 + 明确入口按钮，替代原 #/graph 技术化文案。
+   复用 .placeholder-card 基类，叠加引导动作区。 */
+.view-detail .detail-guide {
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+.view-detail .detail-guide .placeholder-icon {
+  width: 56px;
+  height: 56px;
+  color: var(--accent-secondary);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.6;
+  margin-bottom: var(--space-3);
+}
+.view-detail .detail-guide .placeholder-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+.view-detail .detail-guide .placeholder-sub {
+  font-size: var(--fs-base);
+  color: var(--accent-secondary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  margin-bottom: var(--space-3);
+}
+.view-detail .detail-guide .placeholder-sub code {
+  color: var(--accent-tertiary);
+  font-size: var(--fs-sm);
+  word-break: break-all;
+}
+.view-detail .detail-guide .placeholder-hint {
+  font-size: var(--fs-base);
+  color: var(--text-tertiary);
+  line-height: 1.7;
+  max-width: 420px;
+  margin: 0 auto var(--space-5);
+}
+.view-detail .detail-guide-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.view-detail .btn-guide-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px var(--space-5);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--accent-primary);
+  background: linear-gradient(135deg, rgba(232, 155, 187, 0.18), rgba(232, 155, 187, 0.08));
+  border-color: rgba(232, 155, 187, 0.45);
+  text-shadow: 0 0 8px rgba(232, 155, 187, 0.3);
+  transition: transform var(--dur-base) var(--ease-out),
+              background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out);
+}
+.view-detail .btn-guide-primary svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.view-detail .btn-guide-primary:hover {
+  background: linear-gradient(135deg, rgba(232, 155, 187, 0.28), rgba(232, 155, 187, 0.16));
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+.view-detail .btn-guide-primary:active { transform: translateY(0); }
+.view-detail .btn-guide-primary:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ===== 响应式：窄屏堆叠 ===== */
+@media (max-width: 880px) {
+  /* 弹窗容器窄屏留白收紧，让弹窗主体更大 */
+  .detail-modal { padding: var(--space-3); }
+  .view-detail .detail-shell { padding: var(--space-3) var(--space-4) var(--space-4); }
+  .view-detail .detail-cols {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .view-detail .detail-aside {
+    max-height: 240px;
+  }
+  .view-detail .vitality-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .view-detail .vitality-radar {
+    align-self: center;
+  }
+  .view-detail .detail-guide-actions { flex-direction: column; }
+  .view-detail .btn-guide-primary { width: 100%; justify-content: center; }
+}

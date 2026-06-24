@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egoknowledge.local/schemas/decision.schema.json",
+  "type": "object",
+  "required": [
+    "decided_at",
+    "decision_status",
+    "evidence_refs"
+  ],
+  "properties": {
+    "decided_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "decision_status": {
+      "enum": [
+        "active",
+        "superseded"
+      ]
+    },
+    "superseded_by": {
+      "type": "string"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

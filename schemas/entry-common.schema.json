@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egoknowledge.local/schemas/entry-common.schema.json",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "title",
+    "slug",
+    "status",
+    "freshness",
+    "schema_version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^ek_(src|note|dos|con|dec|view)_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "kind": {
+      "enum": [
+        "source",
+        "note",
+        "dossier",
+        "concept",
+        "decision",
+        "view"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[\\u4e00-\\u9fff\\u3400-\\u4dbf\\uf900-\\ufaffa-zA-Z0-9-]+$"
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "active",
+        "authoritative",
+        "legacy",
+        "deprecated",
+        "archived"
+      ]
+    },
+    "freshness": {
+      "enum": [
+        "stable",
+        "watch",
+        "volatile"
+      ]
+    },
+    "confidence": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "search_terms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 5,
+      "description": "≥5 个词，单项 ≤40 字符；必须覆盖三个桶（中文/英文/别称）。英文桶无对应时填 '' 显式占位（仅限 1 处）；其他位置不允许空白字符串。长度限制由应用层 validate_search_terms 强制执行。"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "relation.schema.json"
+      }
+    }
+  }
+}

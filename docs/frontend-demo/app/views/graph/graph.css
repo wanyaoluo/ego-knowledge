@@ -1,0 +1,814 @@
+/* views/graph/graph.css · 图谱视图专属样式
+ * 作用域到 .view-graph，避免与其他视图冲突。
+ * 视觉沿用 cyber-pink（spec 真源），从原型 style.css 迁移。
+ */
+
+/* 画布（v2.5 克制：深紫琥珀底；v2.8 叠加蓝图网格纹路给空间感，不再纯色平板）
+ * 黑曜石调研：高级感来自克制不是发光；蓝图纹路用极低透明度网格 + 远点星辰，
+ * 仅作"空间深度"暗示，不与节点抢视觉焦点（grid 透明度 0.04，dots 0.06）。
+ * 三层叠加：基底纯色（#120818）+ 主网格（48px 紫）+ 微网格（12px 灰）+ 零星点缀 */
+.view-graph .graph-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-color: var(--bg-canvas);   /* #120818 · 黑曜石纯净底 */
+  /* v2.10 空间视差：背景跟随 cytoscape pan/zoom（JS scheduleBgFollow 写入这三个变量）。
+   * 默认 0px/1 对应 cy 初始 pan(0,0)/zoom(1)，mount 期间未触发事件时背景静态无偏移。
+   * 网格层与模型 1:1 平移（节点坐标系一致），星辰层视差慢移（0.3-0.5 倍 pan，深度感）。 */
+  --bg-px: 0px;
+  --bg-py: 0px;
+  --bg-zoom: 1;
+  background-image:
+    /* 远点星辰（散布的微亮点，给空间纵深，无规律避免图案感） */
+    radial-gradient(1px 1px at 23% 17%, rgba(181, 158, 230, 0.18) 50%, transparent 51%),
+    radial-gradient(1px 1px at 67% 73%, rgba(230, 184, 133, 0.14) 50%, transparent 51%),
+    radial-gradient(1px 1px at 85% 31%, rgba(232, 155, 187, 0.12) 50%, transparent 51%),
+    radial-gradient(1px 1px at 12% 88%, rgba(181, 158, 230, 0.10) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 41% 54%, rgba(201, 184, 232, 0.10) 50%, transparent 51%),
+    /* 主网格（48px 紫色蓝图线，空间骨架） */
+    linear-gradient(to right, rgba(181, 158, 230, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(181, 158, 230, 0.045) 1px, transparent 1px),
+    /* 微网格（12px 灰紫，密度感） */
+    linear-gradient(to right, rgba(137, 121, 137, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(137, 121, 137, 0.025) 1px, transparent 1px);
+  background-size:
+    /* 星辰散布层（跟 zoom 缩放，tile 随之放大缩小）*/
+    calc(256px * var(--bg-zoom)) calc(256px * var(--bg-zoom)),
+    calc(256px * var(--bg-zoom)) calc(256px * var(--bg-zoom)),
+    calc(320px * var(--bg-zoom)) calc(320px * var(--bg-zoom)),
+    calc(280px * var(--bg-zoom)) calc(280px * var(--bg-zoom)),
+    calc(200px * var(--bg-zoom)) calc(200px * var(--bg-zoom)),
+    /* 主网格 48px（跟 zoom：放大时网格变疏，缩小时变密，与节点缩放一致）*/
+    calc(48px * var(--bg-zoom)) calc(48px * var(--bg-zoom)),
+    calc(48px * var(--bg-zoom)) calc(48px * var(--bg-zoom)),
+    /* 微网格 12px */
+    calc(12px * var(--bg-zoom)) calc(12px * var(--bg-zoom)),
+    calc(12px * var(--bg-zoom)) calc(12px * var(--bg-zoom));
+  background-position:
+    /* 星辰：视差慢移（0.3-0.5 倍 pan，制造空间深度，远物慢近物快）*/
+    calc(var(--bg-px) * 0.30) calc(var(--bg-py) * 0.30),
+    calc(var(--bg-px) * 0.32) calc(var(--bg-py) * 0.32),
+    calc(var(--bg-px) * 0.36) calc(var(--bg-py) * 0.36),
+    calc(var(--bg-px) * 0.42) calc(var(--bg-py) * 0.42),
+    calc(var(--bg-px) * 0.48) calc(var(--bg-py) * 0.48),
+    /* 主网格 / 微网格：与模型 1:1 平移（节点拖到哪网格跟到哪，空间锚定一致）*/
+    var(--bg-px) var(--bg-py),
+    var(--bg-px) var(--bg-py),
+    var(--bg-px) var(--bg-py),
+    var(--bg-px) var(--bg-py);
+}
+
+/* 玻璃面板定位 */
+.view-graph .panel-left {
+  top: calc(var(--topbar-h) + 16px);
+  left: var(--space-5);
+  width: 212px;
+  padding: var(--space-4);
+  max-height: calc(100vh - var(--topbar-h) - 32px);
+  max-height: calc(100dvh - var(--topbar-h) - 32px);
+  overflow-y: auto;
+}
+.view-graph .panel-right {
+  top: calc(var(--topbar-h) + 16px);
+  right: var(--space-5);
+  width: 320px;
+  padding: var(--space-5);
+  max-height: calc(100vh - var(--topbar-h) - 32px);
+  max-height: calc(100dvh - var(--topbar-h) - 32px);
+  overflow-y: auto;
+}
+
+/* kind 筛选 chip */
+.view-graph .kind-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.view-graph .kind-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 9px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out);
+  user-select: none;
+}
+.view-graph .kind-chip:hover { background: var(--surface-hover); }
+.view-graph .kind-chip.off { opacity: 0.4; }
+.view-graph .kind-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow:
+    0 0 8px currentColor,
+    0 0 14px currentColor;
+  animation: kind-dot-pulse 3s ease-in-out infinite;
+}
+@keyframes kind-dot-pulse {
+  0%, 100% { box-shadow: 0 0 6px currentColor, 0 0 10px currentColor; }
+  50%      { box-shadow: 0 0 10px currentColor, 0 0 18px currentColor; }
+}
+.view-graph .kind-label {
+  font-size: var(--fs-lg);
+  color: var(--text-secondary);
+  flex: 1;
+}
+.view-graph .kind-count {
+  font-family: var(--font-mono);   /* v2 终端字 */
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* toggle 开关 */
+.view-graph .toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  padding: 5px 0;
+  user-select: none;
+}
+.view-graph .toggle input { display: none; }
+.view-graph .toggle-track {
+  width: 30px;
+  height: 17px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.3);
+  position: relative;
+  transition: background var(--dur-base);
+  flex-shrink: 0;
+}
+.view-graph .toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  transition: transform var(--dur-base) var(--ease-out), background var(--dur-base);
+}
+.view-graph .toggle input:checked + .toggle-track { background: var(--accent-primary-a30); }
+.view-graph .toggle input:checked + .toggle-track::after {
+  transform: translateX(13px);
+  background: var(--accent-primary);
+}
+.view-graph .toggle-text {
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+}
+
+/* A1+A2：详情入口 CTA 组 —— 主入口（樱粉全宽主按钮）+ 次操作（复制路径幽灵按钮）。
+   视觉权重：主按钮 > 次按钮，让用户在浮层预览后一眼知道"想深入点这里"。 */
+.view-graph .detail-cta-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.view-graph .btn-detail-entry {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 11px var(--space-4);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent-primary);
+  background: linear-gradient(135deg, rgba(232, 155, 187, 0.22), rgba(232, 155, 187, 0.10));
+  border-color: rgba(232, 155, 187, 0.55);
+  text-shadow: 0 0 10px rgba(232, 155, 187, 0.35);
+  box-shadow: 0 0 0 1px rgba(232, 155, 187, 0.08), 0 6px 18px rgba(232, 155, 187, 0.10);
+  transition: transform var(--dur-base) var(--ease-out),
+              background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+.view-graph .btn-detail-entry:hover {
+  background: linear-gradient(135deg, rgba(232, 155, 187, 0.32), rgba(232, 155, 187, 0.18));
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px rgba(232, 155, 187, 0.20), 0 10px 26px rgba(232, 155, 187, 0.22);
+  transform: translateY(-1px);
+}
+.view-graph .btn-detail-entry:active { transform: translateY(0); }
+.view-graph .btn-detail-entry:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
+}
+.view-graph .btn-detail-arrow {
+  font-size: var(--fs-xl);
+  line-height: 1;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.view-graph .btn-detail-entry:hover .btn-detail-arrow { transform: translateX(4px); }
+.view-graph .btn-vsc-mini {
+  width: 100%;
+  padding: 5px var(--space-3);
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  justify-content: center;
+}
+.view-graph .btn-vsc-mini:hover { color: var(--accent-secondary); }
+
+/* 图例 */
+.view-graph .legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.view-graph .legend-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+}
+.view-graph .legend-line {
+  width: 22px;
+  height: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+  flex-shrink: 0;
+}
+.view-graph .legend-line.dashed { border-top-style: dashed; }
+.view-graph .legend-line.dotted { border-top-style: dotted; border-top-width: 2.5px; }
+
+/* 详情面板 */
+.view-graph .detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  position: relative;
+}
+/* detail panel 顶部 HUD 标识（终端字 + 樱粉 glow，少女+极客） */
+.view-graph .detail-top::before {
+  content: '◆ NODE_DETAIL';
+  position: absolute;
+  top: -28px;
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  color: var(--accent-primary);
+  text-shadow: 0 0 8px var(--accent-primary-a55);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.view-graph .detail-kind {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid currentColor;
+  font-weight: 500;
+}
+.view-graph .detail-close {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: var(--fs-2xl);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color var(--dur-base);
+}
+.view-graph .detail-close:hover { color: var(--accent-primary); }
+.view-graph .detail-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.35;
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+  word-break: break-word;
+}
+.view-graph .detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+}
+.view-graph .detail-section {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-soft);
+}
+.view-graph .detail-section:not(:first-child) { margin-top: var(--space-4); }
+.view-graph .detail-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 9px;
+}
+.view-graph .authority-bar {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.2);
+  overflow: hidden;
+}
+.view-graph .authority-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+  transition: width var(--dur-slow) var(--ease-out);
+  box-shadow: 0 0 12px var(--accent-primary-a60),
+              inset 0 0 6px rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+/* authority bar 顶部流光（数据感） */
+.view-graph .authority-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: auth-flow 2.6s linear infinite;
+}
+@keyframes auth-flow {
+  0%   { background-position: -50% 0; }
+  100% { background-position: 150% 0; }
+}
+.view-graph .authority-val {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);   /* v2 终端字体 */
+  color: var(--accent-primary);
+  text-shadow: 0 0 6px var(--accent-primary-a40);
+}
+.view-graph .detail-relations {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+/* a11y：rel-row 改为 <button> 元素，需重置 button 默认样式 + 保证完整宽度/对齐 */
+.view-graph .rel-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px 9px;
+  border-radius: var(--radius-md);
+  background: rgba(137, 121, 137, 0.08);
+  cursor: pointer;
+  transition: background var(--dur-base), border-color var(--dur-base);
+  border: 1px solid transparent;
+  /* button 元素补充：宽度铺满 + 左对齐 + 字体继承（base 已 reset font-family/color） */
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+.view-graph .rel-row:hover {
+  background: var(--accent-primary-a08);
+  border-color: var(--border-soft);
+}
+/* button 默认 type=submit 会在表单里触发表单提交，本项目无表单但保险起见已在 JS 设 type=button */
+.view-graph .rel-type {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  color: var(--accent-secondary);
+  flex-shrink: 0;
+  min-width: 64px;
+}
+.view-graph .rel-arrow {
+  color: var(--text-tertiary);
+  font-size: var(--fs-md);
+}
+.view-graph .rel-title {
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Phase 2 升级：关系深度滑块 ===== */
+.view-graph .depth-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.view-graph .depth-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.25);
+  outline: none;
+  cursor: pointer;
+}
+.view-graph .depth-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: 2px solid #120818;
+  box-shadow: 0 0 8px var(--accent-primary-a50);
+  cursor: pointer;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.view-graph .depth-slider::-webkit-slider-thumb:hover { transform: scale(1.18); }
+.view-graph .depth-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: 2px solid #120818;
+  box-shadow: 0 0 8px var(--accent-primary-a50);
+  cursor: pointer;
+}
+.view-graph .depth-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--accent-primary-a35), 0 0 8px var(--accent-primary-a50);
+}
+.view-graph .depth-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  padding: 0 2px;
+}
+.view-graph .depth-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--fs-sm);
+  margin-top: 2px;
+}
+.view-graph .depth-val {
+  color: var(--accent-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* ===== Phase 2 升级：小地图（右下角，视觉对齐 panel token） ===== */
+.view-graph .minimap-wrap {
+  position: absolute;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  width: 200px;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-panel), var(--shadow-inset);
+  z-index: 14;             /* 低于 panel(15)，但 detail 打开时已移位避让 */
+  user-select: none;
+  transition: right var(--dur-slow) var(--ease-out);
+}
+@supports not ((backdrop-filter: blur(24px)) or (-webkit-backdrop-filter: blur(24px))) {
+  .view-graph .minimap-wrap { background: rgba(18, 8, 24, 0.94); }
+}
+.view-graph .minimap {
+  display: block;
+  width: 200px;
+  height: 130px;
+  border-radius: var(--radius-sm);
+  cursor: grab;
+}
+.view-graph .minimap:active { cursor: grabbing; }
+.view-graph .minimap-label {
+  display: block;
+  text-align: center;
+  margin-top: var(--space-1);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+/* 详情面板打开时，minimap 左移避让 panel-right（宽 320 + 边距） */
+.view-graph .panel-right:not([hidden]) ~ .minimap-wrap {
+  right: calc(320px + var(--space-5) + var(--space-2));
+}
+
+/* v2 minimap HUD 化：终端字体标签 + 樱粉光晕呼吸 */
+.view-graph .minimap-wrap {
+  border-color: var(--accent-primary-a18);
+  box-shadow:
+    var(--shadow-panel),
+    var(--shadow-inset),
+    0 0 24px var(--accent-primary-a08);
+  animation: minimap-breathe 4s ease-in-out infinite alternate;
+}
+@keyframes minimap-breathe {
+  0%   { box-shadow: var(--shadow-panel), var(--shadow-inset), 0 0 18px var(--accent-primary-a08); }
+  100% { box-shadow: var(--shadow-panel), var(--shadow-inset), 0 0 32px var(--accent-primary-a18); }
+}
+.view-graph .minimap-label {
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  opacity: 0.8;
+  text-shadow: 0 0 6px var(--accent-primary-a40);
+}
+.view-graph .minimap-label::before {
+  content: '◇ ';
+  opacity: 0.7;
+}
+
+/* ===== Phase 2 a11y · 节点导航（键盘可达替代路径）===== */
+.view-graph .node-search {
+  width: 100%;
+  padding: 6px 9px;
+  margin-bottom: var(--space-2);
+  background: rgba(18, 8, 24, 0.45);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);   /* v2 终端字体（极客感） */
+  font-size: var(--fs-base);
+  transition: border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+.view-graph .node-search::placeholder {
+  color: var(--text-tertiary);
+  font-family: var(--font-ui);
+}
+.view-graph .node-search:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary-a20), 0 0 12px var(--accent-primary-a18);
+}
+.view-graph .node-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 2px; /* 滚动条避让 */
+}
+.view-graph .node-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out);
+}
+.view-graph .node-list-item:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.view-graph .node-list-item[aria-current="true"] {
+  background: var(--surface-active);
+  border-color: var(--accent-primary-a24);
+  color: var(--text-primary);
+}
+.view-graph .nl-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+.view-graph .nl-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.view-graph .node-list-empty {
+  font-size: var(--fs-md);
+  padding: var(--space-2) 0;
+}
+.view-graph .node-list-meta {
+  font-size: var(--fs-xs);
+  margin-top: var(--space-1);
+  letter-spacing: 0.04em;
+}
+
+/* ===== 返回按钮（画布左上角标准位）=====
+ * 取代原居中一长条 graph-nav（面包屑+模式+退出聚焦横占顶部，反直觉）。
+ * 仅在层级钻取时显示（L2/L3），label=返回目的地，简短；L1/全图隐藏。
+ * 定位避让左面板：left = 面板左边距(20) + 面板宽(212) + 间隙(16)，与 .panel-left 宽度耦合。
+ * z-index 13：高于画布(1)，低于 minimap(14)/panel(15)。 */
+.view-graph .graph-back {
+  position: absolute;
+  top: calc(var(--topbar-h) + 16px);
+  left: calc(var(--space-5) + 212px + var(--space-4));
+  z-index: 13;
+  animation: gnav-in var(--dur-base) var(--ease-out);
+}
+.view-graph .graph-back[hidden] { display: none; }
+@keyframes gnav-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.view-graph .graph-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--space-3);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-panel), var(--shadow-inset);
+  cursor: pointer;
+  transition: color var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              background var(--dur-base) var(--ease-out);
+}
+@supports not ((backdrop-filter: blur(24px)) or (-webkit-backdrop-filter: blur(24px))) {
+  .view-graph .graph-back-btn { background: rgba(18, 8, 24, 0.94); }
+}
+.view-graph .graph-back-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.view-graph .graph-back-btn:hover {
+  color: var(--accent-primary);
+  border-color: rgba(232, 155, 187, 0.4);
+  background: var(--accent-primary-a08);
+}
+.view-graph .graph-back-btn:hover svg { transform: translateX(-2px); }
+.view-graph .graph-back-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ===== 视图模式分段控件（左面板顶部，常驻可见）=====
+ * 主题地图（层次钻取 L1→L2→L3）/ 全图（全量力导向）。从原顶部 nav 栏移入左面板，
+ * 避免与返回按钮挤一长条；面板内全宽分段，触达面积足。 */
+.view-graph .panel-mode { padding-bottom: var(--space-3); }
+.view-graph .gnav-mode {
+  display: flex;
+  width: 100%;
+  gap: 1px;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.16);
+}
+.view-graph .gnav-mode-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--dur-base), background var(--dur-base);
+}
+.view-graph .gnav-mode-btn:hover { color: var(--text-secondary); }
+.view-graph .gnav-mode-btn.active {
+  color: var(--accent-primary);
+  background: var(--accent-primary-a15);
+}
+.view-graph .gnav-mode-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* ===== v2.7 L1 主题地图 · 左侧领地列表 ===== */
+.view-graph .domain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.view-graph .domain-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: background var(--dur-base), border-color var(--dur-base), color var(--dur-base);
+}
+.view-graph .domain-list-item:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.view-graph .domain-list-item:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.view-graph .domain-list-item[aria-current="true"] {
+  background: var(--surface-active);
+  border-color: var(--accent-primary-a24);
+  color: var(--text-primary);
+}
+.view-graph .dl-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.view-graph .dl-name {
+  flex: 1;
+  min-width: 0;          /* flex 子项允许收缩到内容以下，换行才能生效 */
+  line-height: 1.3;      /* 两行时不挤 */
+  /* 放开截断：领地 slug（如 novel-context-strategy）在连字符处自然换行，
+     短名一行、长名两行，确保用户看清每个领地全名（不再 cognitive-sc... 截断）。
+     overflow-wrap 兜底无连字符的超长 token，保证不撑破列宽。 */
+  overflow-wrap: break-word;
+}
+.view-graph .dl-count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.view-graph .dl-auth {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--accent-tertiary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* L1 图例（领地视觉编码说明） */
+.view-graph .l1-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-soft);
+}
+.view-graph .l1-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+}
+.view-graph .l1-legend-size {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-secondary);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+.view-graph .l1-legend-glow {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-tertiary);
+  box-shadow: 0 0 10px var(--accent-tertiary);
+  flex-shrink: 0;
+}
+.view-graph .l1-legend-edge {
+  width: 22px;
+  height: 0;
+  border-top: 2px solid var(--text-tertiary);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-graph .graph-back { animation: none; }
+}

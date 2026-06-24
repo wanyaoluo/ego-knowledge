@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egoknowledge.local/schemas/concept.schema.json",
+  "type": "object",
+  "required": [
+    "evidence_refs",
+    "evidence_status"
+  ],
+  "properties": {
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_status": {
+      "enum": [
+        "solid",
+        "partial",
+        "weak"
+      ]
+    }
+  }
+}

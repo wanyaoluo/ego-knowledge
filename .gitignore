@@ -1,0 +1,35 @@
+# 数据与运行时（绝不入仓：防真实知识库/索引被误提交）
+/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+logs/
+.txn-snapshots/
+
+# 凭证
+secrets.toml
+.env
+.env.local
+
+# Python 构建/缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 测试/工具缓存
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# dense 索引本地缓存
+.smart-env/
+
+# 编辑器/系统
+.idea/
+.DS_Store
+Thumbs.db

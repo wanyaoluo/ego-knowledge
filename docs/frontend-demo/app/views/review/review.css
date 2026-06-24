@@ -1,0 +1,324 @@
+/* views/review/review.css · 复核队列（三段治理队列 · 卡片墙）
+ * 作用域 .view-review；视觉沿用 cyber-pink（紫琥珀氛围 / 樱粉焦点）。
+ */
+
+/* ===== 骨架 ===== */
+.view-review .rv-shell {
+  position: absolute;
+  inset: var(--topbar-h) 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  overflow: hidden;
+}
+
+/* ===== 顶部 ===== */
+.view-review .rv-header {
+  position: relative;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.view-review .rv-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  background: linear-gradient(180deg, #fff 0%, rgba(245, 237, 244, 0.7) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.view-review .rv-sub {
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+.view-review .rv-sub b {
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  text-shadow: 0 0 6px var(--accent-primary-a30);
+}
+.view-review .rv-header-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+.view-review .rv-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+}
+.view-review .rv-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--q-color);
+  box-shadow: 0 0 6px var(--q-color);
+}
+.view-review .rv-legend-count {
+  color: var(--q-color);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* ===== 队列列表 ===== */
+.view-review .rv-queues {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-right: var(--space-2);
+}
+
+/* 队列头部 */
+.view-review .rv-queue-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding-left: var(--space-3);
+  position: relative;
+}
+.view-review .rv-queue-head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--q-color);
+  box-shadow: 0 0 8px var(--q-color);
+}
+.view-review .rv-queue-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--q-color);
+  box-shadow: 0 0 8px var(--q-color);
+  flex-shrink: 0;
+}
+.view-review .rv-queue-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.view-review .rv-queue-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+.view-review .rv-queue-hint {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+.view-review .rv-queue-count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  color: var(--q-color);
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.12);
+  border: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+
+/* ===== 卡片网格 ===== */
+.view-review .rv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-3);
+}
+
+/* 单卡片 */
+.view-review .rv-card {
+  position: relative;
+  display: flex;
+  min-height: 108px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--dur-base) var(--ease-spring),
+              border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+.view-review .rv-card:hover,
+.view-review .rv-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--accent-primary-a30);
+  box-shadow:
+    0 0 0 1px var(--accent-primary-a12),
+    0 10px 28px rgba(4, 2, 7, 0.34),
+    0 0 20px var(--accent-primary-a08);
+  outline: none;
+}
+/* 左侧双色条：kind 色 + freshness 色（一眼看出双维度） */
+.view-review .rv-card-stripe {
+  flex-shrink: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--kind-color) 0%, var(--kind-color) 50%, var(--fresh-color) 50%, var(--fresh-color) 100%);
+  box-shadow: 0 0 8px var(--kind-color);
+}
+.view-review .rv-card-body {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.view-review .rv-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.view-review .rv-kind {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  color: var(--kind-color);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-right: auto;
+}
+.view-review .rv-tag {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-soft);
+  color: var(--text-tertiary);
+}
+.view-review .rv-tag-fresh {
+  color: var(--fresh-color);
+  border-color: color-mix(in srgb, var(--fresh-color) 40%, transparent);
+  background: color-mix(in srgb, var(--fresh-color) 10%, transparent);
+}
+.view-review .rv-card-title {
+  font-family: var(--font-ui);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+.view-review .rv-card-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.view-review .rv-card-domain {
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.view-review .rv-auth {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.view-review .rv-auth-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: rgba(137, 121, 137, 0.18);
+  overflow: hidden;
+}
+.view-review .rv-auth-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--kind-color), var(--accent-primary));
+  box-shadow: 0 0 6px var(--accent-primary-a40);
+}
+.view-review .rv-auth-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+/* 展开/收起按钮（占卡片位） */
+.view-review .rv-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 108px;
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out);
+}
+.view-review .rv-more:hover {
+  background: var(--accent-primary-a06);
+  border-color: var(--accent-primary-a30);
+  color: var(--accent-primary);
+}
+.view-review .rv-more-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--accent-primary);
+  text-shadow: 0 0 8px var(--accent-primary-a30);
+}
+.view-review .rv-more-label {
+  font-size: var(--fs-md);
+  letter-spacing: 0.04em;
+}
+.view-review .rv-empty {
+  text-align: center;
+  padding: var(--space-6);
+  font-size: var(--fs-base);
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 640px) {
+  .view-review .rv-grid {
+    grid-template-columns: 1fr;
+  }
+  .view-review .rv-header { flex-direction: column; align-items: flex-start; }
+}

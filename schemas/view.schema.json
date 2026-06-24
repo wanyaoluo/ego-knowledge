@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egoknowledge.local/schemas/view.schema.json",
+  "type": "object",
+  "required": [
+    "generator",
+    "generated_at",
+    "source_query"
+  ],
+  "properties": {
+    "generator": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "source_query": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

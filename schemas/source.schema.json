@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egoknowledge.local/schemas/source.schema.json",
+  "type": "object",
+  "required": [
+    "source_type",
+    "source_url",
+    "captured_at",
+    "content_hash"
+  ],
+  "properties": {
+    "source_type": {
+      "enum": [
+        "web",
+        "doc",
+        "media",
+        "import",
+        "github_release"
+      ]
+    },
+    "source_url": {
+      "type": "string",
+      "minLength": 1
+    },
+    "captured_at": {
+      "type": "string"
+    },
+    "content_hash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "watch_target": {
+      "type": "string",
+      "description": "owner/repo for github_release sources, used to find old versions for superseded_by"
+    },
+    "superseded_by": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "IDs of entries that supersede this source"
+    }
+  }
+}
